@@ -1,12 +1,14 @@
 const express = require('express')
+const cors = require('cors')
 const morgan = require('morgan')
 const { v4: uuidv4 } = require('uuid');
 
 const app = express()
 app.use(express.json())
-// app.use(morgan('tiny'))
+app.use(express.static('dist'))
+app.use(cors())
+
 app.use(morgan((tokens, req, res) => {
-	// console.log(req.body)
 	return [
 		tokens.method(req, res),
 		tokens.url(req, res),
@@ -20,22 +22,22 @@ app.use(morgan((tokens, req, res) => {
 
 let persons = [
 	{
-		"id": 1,
+		"id": uuidv4(),
 		"name": "Arto Hellas",
 		"number": "040-123456"
 	},
 	{
-		"id": 2,
+		"id": uuidv4(),
 		"name": "Ada Lovelace",
 		"number": "39-44-5323523"
 	},
 	{
-		"id": 3,
+		"id": uuidv4(),
 		"name": "Dan Abramov",
 		"number": "12-43-234345"
 	},
 	{
-		"id": 4,
+		"id": uuidv4(),
 		"name": "Mary Poppendieck",
 		"number": "39-23-6423122"
 	}
@@ -56,7 +58,7 @@ app.get('/api/persons', (req, res) => {
 })
 
 app.get('/api/persons/:id', (req, res) => {
-	const id = Number(req.params.id)
+	const id = req.params.id
 	const person = persons.find(person => person.id === id)
 
 	if (person) {
@@ -68,8 +70,43 @@ app.get('/api/persons/:id', (req, res) => {
 })
 
 app.delete('/api/persons/:id', (req, res) => {
-	const id = Number(req.params.id)
+	//console.log(req.params.id)
+	const id = req.params.id
+	//console.log(persons)
+	// const deletedPerson = persons.find(person => {
+	// 	console.log(person.id, typeof(person.id))
+	// 	console.log(id, typeof(id))
+	// 	console.log(id === person.id)
+	// 	return id === person.id
+	// })
+	//console.log('in index.js, going to delete', deletedPerson)
 	persons = persons.filter(person => person.id != id)
+	//console.log(persons)
+	res.status(204).end()
+	
+})
+
+app.put('/api/persons/:id', (req, res) => {
+	const body = req.body
+	console.log('in put request, got this ', req.body)
+	// console.log(persons.filter(p => p.name === body.name))
+	// console.log(persons.filter(p => p.name === body.name).length)
+
+	if (!body.name || !body.number) {
+		return res.status(400).json({
+			error: 'content missing'
+		})
+	} 
+	  
+	const idx = persons.findIndex(p => p.name === body.name)
+	const newPerson = {
+		id: persons[idx].id,
+		name: body.name,
+		number: body.number
+	}
+
+	persons = persons.map(p => p.id === persons[idx].id ? newPerson : p)
+
 	res.status(204).end()
 })
 
@@ -96,14 +133,14 @@ app.post('/api/persons/', (req, res) => {
 	}
 
 	persons = persons.concat(newPerson)
-	res.json(newPerson)
+	res.status(204).end()
 })
 
 const generateID = () => {
 	return
 }
 
-const PORT = 3001
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
 	console.log(`Server open on port ${PORT}`)
 })
